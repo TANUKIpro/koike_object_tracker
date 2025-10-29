@@ -1,0 +1,50 @@
+version: "3.9"
+
+services:
+  # === Xtion 側 ===
+  ros2:
+    image: sensor:latest
+    container_name: ros2
+    network_mode: "host"
+    privileged: true
+    environment:
+      - DISPLAY=${DISPLAY}
+      - QT_X11_NO_MITSHM=1
+      - AMENT_TRACE_SETUP_FILES=0
+    volumes:
+      - ${X11_DIR:-/tmp/.X11-unix}:/tmp/.X11-unix:rw
+      - /dev/bus/usb:/dev/bus/usb
+    devices:
+      - /dev/dri:/dev/dri
+    device_cgroup_rules:
+      - 'c 189:* rmw'
+    ipc: "host"
+    stdin_open: true
+    tty: true
+    entrypoint: ["/bin/bash","-lc","set +u; . /opt/ros/humble/setup.bash; echo OK; sleep infinity"]
+
+  # === SAM2 側 ===
+  sam2:
+    image: perception:latest
+    container_name: sam2
+    network_mode: "host"
+    ipc: "host"
+    shm_size: "2g"
+    runtime: "nvidia"
+    gpus: "all"
+    environment:
+      - DISPLAY=${DISPLAY}
+      - XAUTHORITY=${XAUTHORITY}
+      - QT_X11_NO_MITSHM=1
+      - PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True,max_split_size_mb:128
+    volumes:
+      - ${X11_DIR:-/tmp/.X11-unix}:/tmp/.X11-unix:rw
+      - ${XAUTHORITY}:/root/.Xauthority:rw
+      - /dev/bus/usb:/dev/bus/usb
+      - ${PWD}:/workspace
+    # devices:
+    #   - /dev/video0:/dev/video0
+    device_cgroup_rules:
+      - 'c 189:* rwm'    # USB
+    profiles: []
+    entrypoint: ["/bin/bash","-lc","apt-get update && apt-get install -y x11-apps && /bin/bash"]
