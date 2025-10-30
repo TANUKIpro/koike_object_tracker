@@ -1,0 +1,14 @@
+yolo_sam2_node:
+  ros__parameters:
+    image_topic: "/camera/rgb/image_raw"
+    yolo_weights: "yolo11s.pt"
+    yolo_conf: 0.4
+    yolo_iou: 0.5
+    max_dets: 10
+    device: "cuda:0"
+    sam2_enabled: true
+    sam2_model_cfg: "/opt/sam2/configs/sam2_hiera_t.yaml"
+    sam2_checkpoint: "/opt/sam2/checkpoints/sam2_hiera_tiny.pt"
+    publish_overlay: true
+    overlay_topic: "/perception/overlay/image"
+    detections_topic: "/perception/detections"

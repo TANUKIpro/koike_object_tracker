@@ -38,10 +38,10 @@ services:
       retries: 5
 
 
-  # === SAM2 側 ===
-  sam2:
+  # === 推論側 ===
+  perception:
     image: perception:latest
-    container_name: sam2
+    container_name: perception
     network_mode: "host"
     privileged: true
     shm_size: "2g"
