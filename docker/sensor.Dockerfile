@@ -1,4 +1,4 @@
-ARG BASE_IMAGE=base:latest
+ARG BASE_IMAGE=base-py310:latest
 FROM ${BASE_IMAGE}
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
@@ -17,11 +17,10 @@ RUN apt update && apt install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # RUN pip install --upgrade pip && pip install catkin_pkg empy lark pandas matplotlib numpy
-RUN python3 -m pip install --upgrade pip && \
-    python3 -m pip install \
+RUN /usr/bin/python3.10 -m pip install --upgrade pip && \
+    /usr/bin/python3.10 -m pip install \
         empy==3.3.4 \
-        catkin_pkg lark pandas \
-        matplotlib numpy pyyaml
+        catkin_pkg lark pandas pyyaml
 
 # openni2_camera
 ENV PATH=/usr/bin:$PATH

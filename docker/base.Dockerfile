@@ -7,14 +7,33 @@ ENV TZ=Asia/Tokyo \
     LC_ALL=C.UTF-8 \
     LANG=C.UTF-8
 
+# 1) Python 3.10 を導入して実行系を 3.10 に固定
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      python3.10 python3.10-venv python3.10-distutils python3-pip && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN /usr/bin/python3.10 -m ensurepip --upgrade || true && \
+    /usr/bin/python3.10 -m pip install -U pip
+
+# 既定の python/pip を 3.10 に向ける
+RUN update-alternatives --install /usr/bin/python python /usr/bin/python3.10 1 && \
+    update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.10 1 && \
+    update-alternatives --install /usr/bin/pip pip /usr/local/bin/pip 1 || true
+
+# PyTorch(2.5.1/cu121) を cp310 で入れ直す
+RUN /usr/bin/python3.10 -m pip install --index-url https://download.pytorch.org/whl/cu121 \
+      torch==2.5.1 torchvision==0.20.1 torchaudio==2.5.1
+
+RUN /usr/bin/python3.10 -m pip install \
+      opencv-python "transformers>=4.44" accelerate
+
 # 必須ツール & GUI/画像系ランタイム
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ >/etc/timezone && \
     apt-get update && apt-get install -y --no-install-recommends \
       tzdata locales ca-certificates curl gnupg lsb-release \
       git wget usbutils vim byobu net-tools \
       ffmpeg libgl1 libglib2.0-0 libgtk-3-0 libsm6 libxrender1 libxext6 x11-apps \
-      python3-opencv && \
-    rm -rf /var/lib/apt/lists/*
+      && rm -rf /var/lib/apt/lists/*
 
 # ROS 2 Humble
 RUN echo "deb [arch=amd64 signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] \
@@ -28,8 +47,6 @@ RUN echo "deb [arch=amd64 signed-by=/usr/share/keyrings/ros-archive-keyring.gpg]
     python3-rosdep && \
   rosdep init || true && rosdep update && \
   rm -rf /var/lib/apt/lists/*
-
-# RUN echo "source /opt/ros/${ROS_DISTRO}/setup.bash" >> ~/.bashrc && source .bashrc
 
 # Gazebo, rqt
 RUN apt update && apt install -y --no-install-recommends \

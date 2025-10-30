@@ -1,10 +1,8 @@
-version: "3.9"
-
 services:
   # === Xtion 側 ===
-  ros2:
+  ros2-xtion:
     image: sensor:latest
-    container_name: ros2
+    container_name: ros2-xtion
     network_mode: "host"
     privileged: true
     environment:
@@ -14,21 +12,38 @@ services:
     volumes:
       - ${X11_DIR:-/tmp/.X11-unix}:/tmp/.X11-unix:rw
       - /dev/bus/usb:/dev/bus/usb
+      # - ./ros2_ws:/ros2_ws
     devices:
       - /dev/dri:/dev/dri
     device_cgroup_rules:
       - 'c 189:* rmw'
     ipc: "host"
+    init: true
+    restart: unless-stopped
     stdin_open: true
     tty: true
-    entrypoint: ["/bin/bash","-lc","set +u; . /opt/ros/humble/setup.bash; echo OK; sleep infinity"]
+    # entrypoint: ["/bin/bash","-lc","set +u; . /opt/ros/humble/setup.bash; echo OK; sleep infinity"]
+    entrypoint: ["/bin/bash","-lc",
+      "set +u; \
+       source /opt/ros/humble/setup.bash; \
+       source /ros2_ws/install/setup.bash || true; \
+       exec ros2 launch openni2_camera camera_only.launch.py"
+    ]
+    # 正常稼働の簡易ヘルスチェック：RGBトピックが出ているか
+    healthcheck:
+      test: ["CMD-SHELL",
+            "source /opt/ros/humble/setup.bash && ros2 topic list | grep -q '^/camera/rgb/image_raw$'"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
 
   # === SAM2 側 ===
   sam2:
     image: perception:latest
     container_name: sam2
     network_mode: "host"
-    ipc: "host"
+    privileged: true
     shm_size: "2g"
     runtime: "nvidia"
     gpus: "all"
@@ -42,9 +57,12 @@ services:
       - ${XAUTHORITY}:/root/.Xauthority:rw
       - /dev/bus/usb:/dev/bus/usb
       - ${PWD}:/workspace
-    # devices:
-    #   - /dev/video0:/dev/video0
+      - ./ros2_ws:/ros2_ws
+    devices:
+      - /dev/dri:/dev/dri
     device_cgroup_rules:
-      - 'c 189:* rwm'    # USB
-    profiles: []
-    entrypoint: ["/bin/bash","-lc","apt-get update && apt-get install -y x11-apps && /bin/bash"]
+      - 'c 189:* rmw'
+    ipc: "host"
+    stdin_open: true
+    tty: true
+    entrypoint: ["/bin/bash"]
