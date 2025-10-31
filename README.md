@@ -1,4 +1,4 @@
-## イメージのビルド  (Build the image)
+## イメージのビルド  (Build the docker images)
 ```
 export DOCKER_BUILDKIT=1
 # 1) base
